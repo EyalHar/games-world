@@ -1,0 +1,12 @@
+node_modules/
+build/
+
+# Secrets (Gemini API key). client/.env only holds the dev port, so it stays tracked.
+.env
+.env.*
+!.env.example
+!client/.env
+
+npm-debug.log*
+.DS_Store
+Thumbs.db

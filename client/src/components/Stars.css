@@ -1,0 +1,7 @@
+.stars { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.stars-star {
+  position: absolute;
+  color: #ffd700;
+  opacity: 0.4;
+  animation: twinkle 2.5s ease-in-out infinite;
+}

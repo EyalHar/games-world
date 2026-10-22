@@ -1,0 +1,122 @@
+.home {
+  position: relative;
+  min-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 40px 16px;
+  overflow: hidden;
+}
+
+.home-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.home-star {
+  position: absolute;
+  color: #ffd700;
+  animation: twinkle 2s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+.home-header {
+  text-align: center;
+  animation: slideIn 0.6s ease;
+}
+
+.home-title-emoji {
+  font-size: 4rem;
+  animation: float 3s ease-in-out infinite;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.home-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffd700, #ff9ff3, #74b9ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+}
+
+.home-subtitle {
+  font-size: 1.2rem;
+  color: rgba(255,255,255,0.7);
+}
+
+.home-games {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  width: 100%;
+  max-width: 900px;
+}
+
+.home-game-card {
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 24px;
+  padding: 36px 28px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.5s ease;
+}
+
+.home-game-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(255,215,0,0.5);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 30px rgba(255,215,0,0.2);
+}
+
+.card-purple { border-color: rgba(180,100,255,0.4); }
+.card-purple:hover { border-color: rgba(180,100,255,0.8); box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 30px rgba(180,100,255,0.3); }
+
+.card-teal { border-color: rgba(0,206,201,0.4); }
+.card-teal:hover { border-color: rgba(0,206,201,0.8); box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 30px rgba(0,206,201,0.3); }
+
+.home-game-emoji {
+  font-size: 4rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+.home-game-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.home-game-desc {
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+}
+
+.home-game-btn {
+  margin-top: 8px;
+  background: linear-gradient(135deg, #9b59b6, #6c3483);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(155,89,182,0.4);
+}
+
+.home-game-card:hover .home-game-btn {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(155,89,182,0.6);
+}
