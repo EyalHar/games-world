@@ -247,6 +247,10 @@ function createGame(io) {
           ref.valid = v ? v.valid : true;
           if (v?.lemma) ref.lemma = cleanText(v.lemma);
           ref.reason = ref.valid ? '' : (v.reason || 'לא מתאימה לתחום');
+          if (ref.valid && !startsWithLetter(ref.lemma, letter)) {
+            ref.valid = false;
+            ref.reason = `הכתיב הנכון הוא "${ref.lemma}" ולא מתחיל באות ${letter}`;
+          }
         });
       } catch (err) {
         console.error('[eretz-ir] answer check failed:', err.message);
