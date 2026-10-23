@@ -5,6 +5,7 @@ import './Sidebar.css';
 const games = [
   { path: '/associations', label: 'משחק האסוציאציות', emoji: '🧚' },
   { path: '/eretz-ir', label: 'ארץ עיר', emoji: '🌍' },
+  { path: '/crossword', label: 'תשבץ אסוציאציות', emoji: '🧩' },
 ];
 
 export default function Sidebar() {

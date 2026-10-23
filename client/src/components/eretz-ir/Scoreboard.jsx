@@ -7,13 +7,13 @@ export default function Scoreboard({ state, playerId }) {
 
   return (
     <div className="ei-scoreboard">
-      <h3 className="ei-section-title">📊 לוח הנקודות</h3>
-      <div className="ei-table-wrap">
-        <table className="ei-table">
+      <h3 className="gr-section-title">📊 לוח הנקודות</h3>
+      <div className="gr-table-wrap">
+        <table className="gr-table">
           <thead>
             <tr>
               <th />
-              <th className="ei-table-name">שחקן</th>
+              <th className="gr-table-name">שחקן</th>
               {state.history.map(h => (
                 <th key={h.round} className={h.isBonus ? 'bonus' : ''} title={`סיבוב ${h.round}`}>{h.letter}</th>
               ))}
@@ -24,9 +24,9 @@ export default function Scoreboard({ state, playerId }) {
             {ranked.map((p, i) => (
               <tr key={p.id} className={p.id === playerId ? 'me' : ''}>
                 <td>{p.total > 0 ? MEDALS[i] : ''}</td>
-                <td className="ei-table-name">{p.name}</td>
+                <td className="gr-table-name">{p.name}</td>
                 {state.history.map(h => <td key={h.round}>{h.scores[p.id] ?? '–'}</td>)}
-                <td className="ei-table-total">{p.total}</td>
+                <td className="gr-table-total">{p.total}</td>
               </tr>
             ))}
           </tbody>

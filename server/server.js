@@ -5,7 +5,9 @@ const cors = require('cors');
 const { Server } = require('socket.io');
 const gameRoutes = require('./routes/game');
 const eretzIrRoutes = require('./routes/eretzIr');
+const crosswordRoutes = require('./routes/crossword');
 const { createGame: createEretzIr } = require('./eretz-ir/game');
+const { createGame: createCrossword } = require('./crossword/game');
 
 const PORT = process.env.PORT || 4403;
 const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
@@ -22,10 +24,12 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/api/game', gameRoutes);
 app.use('/api/eretz-ir', eretzIrRoutes);
+app.use('/api/crossword', crosswordRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: corsOptions });
 createEretzIr(io);
+createCrossword(io.of('/crossword'));
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

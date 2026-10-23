@@ -57,8 +57,8 @@ export default function RoundResults({ state, config, playerId, isHost, send }) 
       <div className="ei-results-header">
         <div className={`ei-letter-badge ${round.isBonus ? 'bonus' : ''}`}>{round.letter}</div>
         <div>
-          <h2 className="ei-title small">תוצאות סיבוב {round.number}</h2>
-          <p className="ei-muted">
+          <h2 className="gr-title small">תוצאות סיבוב {round.number}</h2>
+          <p className="gr-muted">
             {round.finishedBy ? `🏁 ${nameOf(round.finishedBy)} סיים/ה ראשון/ה` : '⏱️ נגמר הזמן'}
             {round.isBonus && ' · 🔥 ניקוד כפול'}
           </p>
@@ -66,7 +66,7 @@ export default function RoundResults({ state, config, playerId, isHost, send }) 
       </div>
 
       {results.manual && (
-        <p className="ei-warning">
+        <p className="gr-warning">
           ⚠️ {MANUAL_REASONS[results.manualReason]}, ולכן כל התשובות שמתחילות באות הנכונה התקבלו.
           אם תשובה של מישהו לא נראית לכם, לחצו "לפסול?" ותתקיים הצבעה.
         </p>
@@ -96,7 +96,7 @@ export default function RoundResults({ state, config, playerId, isHost, send }) 
                         <AnswerItem key={idx} answer={answer} ownerId={p.id} catId={c.id} idx={idx} ctx={ctx} />
                       ))}
                     </ul>
-                  ) : <span className="ei-muted">—</span>}
+                  ) : <span className="gr-muted">—</span>}
                 </div>
               );
             })}
@@ -106,18 +106,18 @@ export default function RoundResults({ state, config, playerId, isHost, send }) 
 
       <Scoreboard state={state} playerId={playerId} />
 
-      {error && <p className="ei-error">{error}</p>}
+      {error && <p className="gr-error">{error}</p>}
 
       {isHost ? (
-        <div className="ei-host-actions">
+        <div className="gr-actions">
           <button className="btn-primary" onClick={() => hostAction('nextRound')} disabled={openDisputes}>
             {isLast ? 'לתוצאות הסופיות 🏆' : 'סיבוב הבא ▶'}
           </button>
           {!isLast && <button className="btn-secondary" onClick={() => hostAction('endGame')}>סיום המשחק 🏁</button>}
-          {openDisputes && <p className="ei-muted">ממתינים לסיום ההצבעות...</p>}
+          {openDisputes && <p className="gr-muted">ממתינים לסיום ההצבעות...</p>}
         </div>
       ) : (
-        <p className="ei-waiting">ממתינים שמנהל החדר ימשיך...</p>
+        <p className="gr-waiting">ממתינים שמנהל החדר ימשיך...</p>
       )}
     </div>
   );

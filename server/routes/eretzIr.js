@@ -1,16 +1,9 @@
 const express = require('express');
-const os = require('os');
 const { CATEGORIES, OPTIONS, DEFAULT_SETTINGS, HARD_LETTERS, MAX_ANSWERS_PER_CATEGORY, MIN_CATEGORIES } = require('../eretz-ir/constants');
 const { isCheckerAvailable } = require('../eretz-ir/checker');
+const { lanAddresses } = require('../shared/network');
 
 const router = express.Router();
-
-function lanAddresses() {
-  return Object.values(os.networkInterfaces())
-    .flat()
-    .filter(i => i && i.family === 'IPv4' && !i.internal)
-    .map(i => i.address);
-}
 
 router.get('/config', (req, res) => {
   res.json({

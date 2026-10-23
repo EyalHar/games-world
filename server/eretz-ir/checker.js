@@ -1,9 +1,4 @@
-const { GoogleGenAI } = require('@google/genai');
-
-// Tried in order; the next model is used when one fails or is overloaded (common on the free tier).
-const DEFAULT_MODELS = ['gemini-3.5-flash-lite', 'gemini-2.5-flash'];
-const MODELS = [...new Set([process.env.GEMINI_MODEL, ...DEFAULT_MODELS].filter(Boolean))];
-const PER_MODEL_TIMEOUT_MS = 15000;
+const { generateJson, isAvailable } = require('../llm/gemini');
 
 const LENIENCY_RULES = {
   strict: 'קבל רק מילים בכתיב תקני. כל שגיאת כתיב פוסלת את התשובה.',
@@ -31,23 +26,6 @@ const RESPONSE_SCHEMA = {
   required: ['results'],
 };
 
-let client = null;
-
-function getClient() {
-  if (!process.env.GEMINI_API_KEY) return null;
-  if (!client) client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  return client;
-}
-
-function isCheckerAvailable() {
-  return Boolean(process.env.GEMINI_API_KEY);
-}
-
-// Thinking adds seconds of latency with no accuracy gain for these simple judgments.
-function thinkingConfigFor(model) {
-  return model.startsWith('gemini-2.5') ? { thinkingBudget: 0 } : { thinkingLevel: 'minimal' };
-}
-
 function buildPrompt({ letter, leniency, items }) {
   return `אתה שופט במשחק "ארץ עיר" לילדים בעברית. האות של הסיבוב: "${letter}".
 
@@ -65,48 +43,14 @@ ${JSON.stringify(items.map(i => ({ id: i.id, category: i.categoryHint, answer: i
 החזר תוצאה לכל id.`;
 }
 
-async function generateWithTimeout(ai, model, contents) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${model} timed out`)), PER_MODEL_TIMEOUT_MS);
-  });
-  try {
-    return await Promise.race([
-      ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          responseMimeType: 'application/json',
-          responseJsonSchema: RESPONSE_SCHEMA,
-          temperature: 0,
-          thinkingConfig: thinkingConfigFor(model),
-        },
-      }),
-      timeout,
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function checkAnswers({ letter, leniency, items }) {
-  const ai = getClient();
-  if (!ai) throw new Error('GEMINI_API_KEY is not set');
   if (!items.length) return new Map();
-
-  const contents = buildPrompt({ letter, leniency, items });
-  let lastError;
-  for (const model of MODELS) {
-    try {
-      const response = await generateWithTimeout(ai, model, contents);
-      const { results } = JSON.parse(response.text);
-      return new Map(results.map(r => [r.id, r]));
-    } catch (err) {
-      console.warn(`[eretz-ir] ${model} failed: ${String(err.message).slice(0, 120)}`);
-      lastError = err;
-    }
-  }
-  throw lastError;
+  const { results } = await generateJson({
+    prompt: buildPrompt({ letter, leniency, items }),
+    schema: RESPONSE_SCHEMA,
+    tag: 'eretz-ir',
+  });
+  return new Map(results.map(r => [r.id, r]));
 }
 
-module.exports = { checkAnswers, isCheckerAvailable };
+module.exports = { checkAnswers, isCheckerAvailable: isAvailable };

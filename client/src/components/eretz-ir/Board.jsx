@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Countdown from './Countdown';
+﻿import React, { useState, useEffect, useRef } from 'react';
+import Countdown from '../game-room/Countdown';
 import { startsWithLetter } from '../../utils/hebrew';
 
 const SYNC_DEBOUNCE_MS = 400;
@@ -68,7 +68,7 @@ export default function Board({ state, config, send }) {
             {(answers[c.id] || []).map((value, idx) => (
               <div key={idx} className="ei-answer-row">
                 <input
-                  className={`ei-input ei-answer-input ${value.trim() && !startsWithLetter(value, round.letter) ? 'warn' : ''}`}
+                  className={`gr-input ei-answer-input ${value.trim() && !startsWithLetter(value, round.letter) ? 'warn' : ''}`}
                   value={value}
                   onChange={e => update(c.id, idx, e.target.value)}
                   placeholder={`${round.letter}...`}
@@ -86,12 +86,12 @@ export default function Board({ state, config, send }) {
         ))}
       </div>
 
-      {error && <p className="ei-error">{error}</p>}
+      {error && <p className="gr-error">{error}</p>}
 
       <button className="btn-primary ei-finish-btn" onClick={finish} disabled={!boardFull}>
         🏁 סיימתי!
       </button>
-      {!boardFull && <p className="ei-muted">אפשר ללחוץ "סיימתי" אחרי שממלאים תשובה בכל התחומים</p>}
+      {!boardFull && <p className="gr-muted">אפשר ללחוץ "סיימתי" אחרי שממלאים תשובה בכל התחומים</p>}
     </div>
   );
 }

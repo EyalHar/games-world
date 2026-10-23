@@ -1,28 +1,6 @@
 import React from 'react';
+import OptionGroup from '../game-room/OptionGroup';
 import { SETTING_LABELS, SETTING_NOTES } from './settingLabels';
-
-function OptionGroup({ name, options, value, onChange, readOnly, titleSuffix }) {
-  const { title, values } = SETTING_LABELS[name];
-  const note = SETTING_NOTES[name]?.[value];
-  return (
-    <div className="ei-setting">
-      <h4 className="ei-setting-title">{title}{titleSuffix}</h4>
-      <div className="ei-pills">
-        {options.map(opt => (
-          <button
-            key={opt}
-            className={`ei-pill ${opt === value ? 'active' : ''}`}
-            onClick={() => onChange(name, opt)}
-            disabled={readOnly}
-          >
-            {values[opt]}
-          </button>
-        ))}
-      </div>
-      {note && <p className="ei-setting-note">{note}</p>}
-    </div>
-  );
-}
 
 export default function SettingsPanel({ config, settings, readOnly, onChange }) {
   const toggleCategory = id => {
@@ -35,10 +13,10 @@ export default function SettingsPanel({ config, settings, readOnly, onChange }) 
   };
 
   return (
-    <div className="ei-settings">
-      <div className="ei-setting">
-        <h4 className="ei-setting-title">
-          📋 תחומים <span className="ei-muted">({settings.categories.length} נבחרו, מינימום {config.minCategories})</span>
+    <div className="gr-settings">
+      <div className="gr-setting">
+        <h4 className="gr-setting-title">
+          📋 תחומים <span className="gr-muted">({settings.categories.length} נבחרו, מינימום {config.minCategories})</span>
         </h4>
         <div className="ei-category-grid">
           {config.categories.map(c => (
@@ -58,12 +36,13 @@ export default function SettingsPanel({ config, settings, readOnly, onChange }) 
       {Object.keys(SETTING_LABELS).map(name => (
         <OptionGroup
           key={name}
-          name={name}
+          title={SETTING_LABELS[name].title + (name === 'hardLetters' ? ` (${config.hardLetters.join(', ')})` : '')}
+          labels={SETTING_LABELS[name].values}
           options={config.options[name]}
           value={settings[name]}
-          onChange={onChange}
+          note={SETTING_NOTES[name]?.[settings[name]]}
           readOnly={readOnly}
-          titleSuffix={name === 'hardLetters' ? ` (${config.hardLetters.join(', ')})` : ''}
+          onChange={value => onChange(name, value)}
         />
       ))}
     </div>

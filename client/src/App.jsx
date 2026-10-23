@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import AssociationGame from './pages/AssociationGame';
 import EretzIr from './pages/EretzIr';
+import Crossword from './pages/Crossword';
 import './App.css';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/associations" element={<AssociationGame />} />
             <Route path="/eretz-ir" element={<EretzIr />} />
+            <Route path="/crossword" element={<Crossword />} />
           </Routes>
         </main>
       </div>

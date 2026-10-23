@@ -1,15 +1,15 @@
-const crypto = require('crypto');
+﻿const crypto = require('crypto');
 const {
   ALL_LETTERS, HARD_LETTERS, CATEGORIES, OPTIONS, DEFAULT_SETTINGS,
   MAX_ANSWERS_PER_CATEGORY, MAX_ANSWER_LENGTH, MIN_CATEGORIES,
 } = require('./constants');
 const { checkAnswers, isCheckerAvailable } = require('./checker');
 const { scoreRound } = require('./scoring');
+const { createCode, passesThreshold, cleanName } = require('../shared/rooms');
 
 const REVEAL_MS = 2500;
 const COLLECT_TIMEOUT_MS = 2000;
 const EMPTY_ROOM_TTL_MS = 30 * 60 * 1000;
-const MAX_NAME_LENGTH = 16;
 
 const rooms = new Map();
 const CATEGORY_HINTS = new Map(CATEGORIES.map(c => [c.id, `${c.label} — ${c.llmHint}`]));
@@ -62,16 +62,9 @@ function sanitizeAnswers(input, categories) {
 
 // ─── room helpers ──────────────────────────────────────────────────────────
 
-function createCode() {
-  let code;
-  do code = String(1000 + Math.floor(Math.random() * 9000));
-  while (rooms.has(code));
-  return code;
-}
-
 function createRoom() {
   const room = {
-    code: createCode(),
+    code: createCode(rooms),
     hostId: null,
     players: [],
     settings: { ...DEFAULT_SETTINGS, categories: [...DEFAULT_SETTINGS.categories] },
@@ -287,12 +280,6 @@ function createGame(io) {
 
   // ── disputes (appeal = owner asks to accept, challenge = others ask to reject) ──
 
-  function passesThreshold(yes, total, threshold) {
-    if (threshold === 'unanimous') return yes === total;
-    if (threshold === 'p65') return yes / total >= 0.65;
-    return yes > total / 2;
-  }
-
   function resolveDispute(room, dispute) {
     if (dispute.status !== 'open') return;
     const total = dispute.voters.length;
@@ -355,11 +342,6 @@ function createGame(io) {
     broadcast(room);
   }
 
-  function validName(name) {
-    const n = String(name || '').trim().slice(0, MAX_NAME_LENGTH);
-    return n || null;
-  }
-
   // ── socket wiring ───────────────────────────────────────────────────────
 
   io.on('connection', socket => {
@@ -381,7 +363,7 @@ function createGame(io) {
     });
 
     socket.on('create', ({ name } = {}, ack = () => {}) => {
-      const n = validName(name);
+      const n = cleanName(name);
       if (!n) return ack({ ok: false, error: 'צריך להקליד שם' });
       const room = createRoom();
       const player = { id: crypto.randomUUID(), name: n, socketId: null, connected: false };
@@ -395,7 +377,7 @@ function createGame(io) {
     socket.on('join', ({ code, name } = {}, ack = () => {}) => {
       const room = rooms.get(String(code || '').trim());
       if (!room) return ack({ ok: false, error: 'לא מצאנו חדר עם הקוד הזה' });
-      const n = validName(name);
+      const n = cleanName(name);
       if (!n) return ack({ ok: false, error: 'צריך להקליד שם' });
 
       let player = room.players.find(p => p.name === n);

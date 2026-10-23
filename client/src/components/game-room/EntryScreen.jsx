@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function EntryScreen({ initialCode, onCreate, onJoin }) {
+export default function EntryScreen({ icon, title, subtitle, initialCode, onCreate, onJoin }) {
   const [mode, setMode] = useState(initialCode ? 'join' : null);
   const [name, setName] = useState('');
   const [code, setCode] = useState(initialCode || '');
@@ -21,33 +21,33 @@ export default function EntryScreen({ initialCode, onCreate, onJoin }) {
   const onKey = e => e.key === 'Enter' && submit();
 
   if (!mode) return (
-    <div className="ei-card">
-      <div className="ei-icon">🌍</div>
-      <h1 className="ei-title">ארץ עיר</h1>
-      <p className="ei-subtitle">כל שחקן משחק מהמכשיר שלו</p>
-      <div className="ei-choice-btns">
-        <button className="ei-choice" onClick={() => setMode('create')}>
-          <span className="ei-choice-emoji">🏠</span>
-          <span className="ei-choice-label">פתיחת חדר חדש</span>
-          <span className="ei-choice-desc">תקבלו קוד לשתף עם החברים</span>
+    <div className="gr-card">
+      <div className="gr-icon">{icon}</div>
+      <h1 className="gr-title">{title}</h1>
+      <p className="gr-subtitle">{subtitle}</p>
+      <div className="gr-choice-btns">
+        <button className="gr-choice" onClick={() => setMode('create')}>
+          <span className="gr-choice-emoji">🏠</span>
+          <span className="gr-choice-label">פתיחת חדר חדש</span>
+          <span className="gr-choice-desc">תקבלו קוד לשתף עם החברים</span>
         </button>
-        <button className="ei-choice" onClick={() => setMode('join')}>
-          <span className="ei-choice-emoji">🔑</span>
-          <span className="ei-choice-label">הצטרפות לחדר</span>
-          <span className="ei-choice-desc">יש לכם קוד? הכניסו אותו כאן</span>
+        <button className="gr-choice" onClick={() => setMode('join')}>
+          <span className="gr-choice-emoji">🔑</span>
+          <span className="gr-choice-label">הצטרפות לחדר</span>
+          <span className="gr-choice-desc">יש לכם קוד? הכניסו אותו כאן</span>
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="ei-card">
-      <div className="ei-icon">{mode === 'create' ? '🏠' : '🔑'}</div>
-      <h2 className="ei-title">{mode === 'create' ? 'פתיחת חדר' : 'הצטרפות לחדר'}</h2>
+    <div className="gr-card">
+      <div className="gr-icon">{mode === 'create' ? '🏠' : '🔑'}</div>
+      <h2 className="gr-title">{mode === 'create' ? 'פתיחת חדר' : 'הצטרפות לחדר'}</h2>
 
       {mode === 'join' && (
         <input
-          className="ei-input ei-code-input"
+          className="gr-input gr-code-input"
           value={code}
           onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
           onKeyDown={onKey}
@@ -58,7 +58,7 @@ export default function EntryScreen({ initialCode, onCreate, onJoin }) {
       )}
 
       <input
-        className="ei-input"
+        className="gr-input"
         value={name}
         onChange={e => setName(e.target.value)}
         onKeyDown={onKey}
@@ -67,12 +67,12 @@ export default function EntryScreen({ initialCode, onCreate, onJoin }) {
         autoFocus={mode === 'create' || Boolean(initialCode)}
       />
 
-      {error && <p className="ei-error">{error}</p>}
+      {error && <p className="gr-error">{error}</p>}
 
       <button className="btn-primary" onClick={submit} disabled={!canSubmit || busy}>
         {mode === 'create' ? 'פתיחת החדר ▶' : 'הצטרפות ▶'}
       </button>
-      <button className="ei-link-btn" onClick={() => { setMode(null); setError(''); }}>
+      <button className="gr-link-btn" onClick={() => { setMode(null); setError(''); }}>
         → חזרה
       </button>
     </div>

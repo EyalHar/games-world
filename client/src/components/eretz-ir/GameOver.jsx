@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Scoreboard from './Scoreboard';
+import Podium from '../game-room/Podium';
 import { useSound } from '../../hooks/useSound';
-
-const PODIUM_ORDER = [1, 0, 2];
 
 export default function GameOver({ state, playerId, isHost, send, onLeave }) {
   const { playCelebration } = useSound();
@@ -18,31 +17,21 @@ export default function GameOver({ state, playerId, isHost, send, onLeave }) {
   });
 
   return (
-    <div className="ei-card wide">
-      <div className="ei-icon">🏆</div>
-      <h2 className="ei-title">
+    <div className="gr-card wide">
+      <div className="gr-icon">🏆</div>
+      <h2 className="gr-title">
         {winners.length > 1 ? 'תיקו!' : `${winners[0]?.name} ניצח/ה!`}
       </h2>
-      {winners.length > 1 && <p className="ei-subtitle">{winners.map(w => w.name).join(' ו')} עם {topScore} נקודות</p>}
+      {winners.length > 1 && <p className="gr-subtitle">{winners.map(w => w.name).join(' ו')} עם {topScore} נקודות</p>}
 
-      {ranked.length > 1 && (
-        <div className="ei-podium">
-          {PODIUM_ORDER.filter(i => ranked[i]).map(i => (
-            <div key={ranked[i].id} className={`ei-podium-step place-${i + 1}`}>
-              <span className="ei-podium-name">{ranked[i].name}</span>
-              <span className="ei-podium-score">{ranked[i].total}</span>
-              <div className="ei-podium-block">{['🥇', '🥈', '🥉'][i]}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      <Podium ranked={ranked.map(p => ({ id: p.id, name: p.name, score: p.total }))} />
 
       <Scoreboard state={state} playerId={playerId} />
 
-      <div className="ei-host-actions">
+      <div className="gr-actions">
         {isHost
           ? <button className="btn-primary" onClick={() => send('newGame')}>משחק חדש 🔄</button>
-          : <p className="ei-waiting">מנהל החדר יכול להתחיל משחק חדש</p>}
+          : <p className="gr-waiting">מנהל החדר יכול להתחיל משחק חדש</p>}
         <button className="btn-secondary" onClick={onLeave}>יציאה</button>
       </div>
     </div>
