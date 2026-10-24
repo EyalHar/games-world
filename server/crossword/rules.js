@@ -77,4 +77,25 @@ function placeFirstWord(board, text) {
   return { row, col, dir: 'h', cells };
 }
 
-module.exports = { checkPlacement, placeWord, placeFirstWord, createBoard, normalizeWord };
+// Every legal spot for `text`: anchored on each board letter it shares, in both directions.
+function findPlacements(board, words, text) {
+  const results = [];
+  const seen = new Set();
+  board.forEach((row, r) => row.forEach((cell, c) => {
+    if (!cell) return;
+    [...text].forEach((ch, i) => {
+      if (baseLetter(ch) !== baseLetter(cell.ch)) return;
+      Object.entries(DELTA).forEach(([dir, [dr, dc]]) => {
+        const placement = { word: text, row: r - dr * i, col: c - dc * i, dir };
+        const key = `${placement.row},${placement.col},${dir}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const check = checkPlacement(board, words, placement);
+        if (check.ok) results.push({ ...placement, check });
+      });
+    });
+  }));
+  return results;
+}
+
+module.exports = { checkPlacement, findPlacements, placeWord, placeFirstWord, createBoard, normalizeWord };

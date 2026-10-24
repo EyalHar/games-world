@@ -57,8 +57,8 @@ export function useGameRoom({ namespace = '', configPath, sessionKey }) {
     return () => socket.disconnect();
   }, [namespace, configPath, sessionKey]);
 
-  const send = useCallback((event, payload = {}) => new Promise(resolve => {
-    socketRef.current.timeout(ACK_TIMEOUT_MS).emit(event, payload, (err, res) => {
+  const send = useCallback((event, payload = {}, timeoutMs = ACK_TIMEOUT_MS) => new Promise(resolve => {
+    socketRef.current.timeout(timeoutMs).emit(event, payload, (err, res) => {
       resolve(err ? { ok: false, error: 'אין תשובה מהשרת' } : res);
     });
   }), []);
@@ -72,7 +72,7 @@ export function useGameRoom({ namespace = '', configPath, sessionKey }) {
     return { ok, error };
   }, [send, sessionKey]);
 
-  const createRoom = useCallback(name => enter('create', { name }), [enter]);
+  const createRoom = useCallback((name, options = {}) => enter('create', { name, ...options }), [enter]);
   const joinRoom = useCallback((code, name) => enter('join', { code, name }), [enter]);
 
   const leaveRoom = useCallback(() => {

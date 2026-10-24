@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
 
-export default function EntryScreen({ icon, title, subtitle, initialCode, onCreate, onJoin }) {
+const MODE_HEADINGS = {
+  create: { icon: '🏠', title: 'פתיחת חדר', action: 'פתיחת החדר ▶' },
+  join: { icon: '🔑', title: 'הצטרפות לחדר', action: 'הצטרפות ▶' },
+  practice: { icon: '🎯', title: 'אימון', action: 'בואו נתאמן ▶' },
+};
+
+// practice: optional { desc } — shows a solo-practice option that creates a room with { practice: true }.
+export default function EntryScreen({ icon, title, subtitle, initialCode, onCreate, onJoin, practice }) {
   const [mode, setMode] = useState(initialCode ? 'join' : null);
   const [name, setName] = useState('');
   const [code, setCode] = useState(initialCode || '');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const canSubmit = name.trim() && (mode === 'create' || code.trim().length === 4);
+  const canSubmit = name.trim() && (mode !== 'join' || code.trim().length === 4);
 
   const submit = async () => {
     if (!canSubmit || busy) return;
     setBusy(true);
     setError('');
-    const res = mode === 'create' ? await onCreate(name.trim()) : await onJoin(code.trim(), name.trim());
+    const n = name.trim();
+    const res = mode === 'join'
+      ? await onJoin(code.trim(), n)
+      : await onCreate(n, mode === 'practice' ? { practice: true } : {});
     if (!res.ok) setError(res.error);
     setBusy(false);
   };
@@ -36,14 +46,22 @@ export default function EntryScreen({ icon, title, subtitle, initialCode, onCrea
           <span className="gr-choice-label">הצטרפות לחדר</span>
           <span className="gr-choice-desc">יש לכם קוד? הכניסו אותו כאן</span>
         </button>
+        {practice && (
+          <button className="gr-choice" onClick={() => setMode('practice')}>
+            <span className="gr-choice-emoji">🎯</span>
+            <span className="gr-choice-label">אימון לבד</span>
+            <span className="gr-choice-desc">{practice.desc}</span>
+          </button>
+        )}
       </div>
     </div>
   );
 
+  const heading = MODE_HEADINGS[mode];
   return (
     <div className="gr-card">
-      <div className="gr-icon">{mode === 'create' ? '🏠' : '🔑'}</div>
-      <h2 className="gr-title">{mode === 'create' ? 'פתיחת חדר' : 'הצטרפות לחדר'}</h2>
+      <div className="gr-icon">{heading.icon}</div>
+      <h2 className="gr-title">{heading.title}</h2>
 
       {mode === 'join' && (
         <input
@@ -64,13 +82,13 @@ export default function EntryScreen({ icon, title, subtitle, initialCode, onCrea
         onKeyDown={onKey}
         placeholder="איך קוראים לך?"
         maxLength={16}
-        autoFocus={mode === 'create' || Boolean(initialCode)}
+        autoFocus={mode !== 'join' || Boolean(initialCode)}
       />
 
       {error && <p className="gr-error">{error}</p>}
 
       <button className="btn-primary" onClick={submit} disabled={!canSubmit || busy}>
-        {mode === 'create' ? 'פתיחת החדר ▶' : 'הצטרפות ▶'}
+        {heading.action}
       </button>
       <button className="gr-link-btn" onClick={() => { setMode(null); setError(''); }}>
         → חזרה

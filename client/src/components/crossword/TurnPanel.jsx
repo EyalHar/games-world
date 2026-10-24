@@ -1,9 +1,24 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
+
+// A hint runs the computer player's engine (several LLM calls), so it gets a longer wait.
+const HINT_TIMEOUT_MS = 60000;
+
+function HintBox({ hint, onUse }) {
+  return (
+    <div className="cw-hint-box">
+      <p>💡 אפשר לנסות <strong>"{hint.word}"</strong>, כי זה קשור ל"{hint.relatedTo}"</p>
+      <p className="gr-muted">{hint.reason}</p>
+      <button className="gr-link-btn" onClick={onUse}>הצגת המקום על הלוח</button>
+    </div>
+  );
+}
 
 export default function TurnPanel({ state, config, player, draft, setDraft, check, send }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const { turn, settings } = state;
+  const [hint, setHint] = useState(null);
+  const [hintLoading, setHintLoading] = useState(false);
+  const { turn, settings, practice } = state;
   const multiLocal = state.myPlayerIds.length > 1;
   const othersConnected = state.players.some(p => p.connected && p.id !== player.id);
   const rejection = turn.lastRejection;
@@ -29,6 +44,18 @@ export default function TurnPanel({ state, config, player, draft, setDraft, chec
     });
     if (res.ok) setDraft(d => ({ ...d, explanation: '' }));
   };
+
+  const askHint = async () => {
+    setHintLoading(true);
+    const res = await send('hint', {}, HINT_TIMEOUT_MS);
+    setHintLoading(false);
+    setError(res.ok ? '' : res.error);
+    if (res.ok) setHint(res.hint);
+  };
+
+  const applyHint = () => setDraft(d => ({
+    ...d, word: hint.word, dir: hint.dir, selected: { r: hint.row, c: hint.col },
+  }));
 
   if (turn.status === 'checking') return (
     <div className="cw-panel">
@@ -99,13 +126,21 @@ export default function TurnPanel({ state, config, player, draft, setDraft, chec
         </>
       )}
 
+      {hint && <HintBox hint={hint} onUse={applyHint} />}
       {error && <p className="gr-error">{error}</p>}
 
       <div className="gr-actions">
         {canSubmit && (
           <button className="btn-primary" onClick={submit} disabled={busy || !check?.ok}>הנחת המילה ✔</button>
         )}
-        <button className="btn-secondary" onClick={() => act('pass')} disabled={busy}>ויתור על התור</button>
+        {practice && state.judgeAvailable && (
+          <button className="btn-hint" onClick={askHint} disabled={busy || hintLoading}>
+            {hintLoading ? '💭 חושב...' : '💡 רמז'}
+          </button>
+        )}
+        {practice
+          ? <button className="btn-secondary" onClick={() => act('endGame')} disabled={busy}>סיום האימון 🏁</button>
+          : <button className="btn-secondary" onClick={() => act('pass')} disabled={busy}>ויתור על התור</button>}
       </div>
     </div>
   );

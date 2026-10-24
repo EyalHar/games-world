@@ -2,11 +2,29 @@ import React, { useState } from 'react';
 import RoomCode from '../game-room/RoomCode';
 import SettingsPanel from './SettingsPanel';
 
+function PracticeLobby({ state, config, run, error, onLeave }) {
+  return (
+    <div className="gr-card wide">
+      <div className="gr-icon">🎯</div>
+      <h2 className="gr-title">אימון בתשבץ אסוציאציות</h2>
+      <p className="gr-subtitle">בלי שעון, עם רמזים. בכל תור מניחים מילה שקשורה למשהו על הלוח.</p>
+      {!state.judgeAvailable && (
+        <p className="gr-warning">⚠️ השופט האוטומטי לא מוגדר, ולכן כל מילה תתקבל ואין רמזים.</p>
+      )}
+      <SettingsPanel config={config} settings={state.settings} practice onChange={(key, value) => run('updateSettings', { settings: { [key]: value } })} />
+      {error && <p className="gr-error">{error}</p>}
+      <button className="btn-primary" onClick={() => run('startGame')}>התחלת האימון ▶</button>
+      <button className="gr-link-btn subtle" onClick={onLeave}>יציאה</button>
+    </div>
+  );
+}
+
 export default function Lobby({ state, config, isHost, send, onLeave }) {
   const [showSettings, setShowSettings] = useState(false);
   const [localName, setLocalName] = useState('');
   const [error, setError] = useState('');
   const mine = state.myPlayerIds;
+  const solo = state.players.length === 1;
 
   const run = async (event, payload) => {
     const res = await send(event, payload);
@@ -19,6 +37,8 @@ export default function Lobby({ state, config, isHost, send, onLeave }) {
     const res = await run('addLocalPlayer', { name: localName.trim() });
     if (res.ok) setLocalName('');
   };
+
+  if (state.practice) return <PracticeLobby state={state} config={config} run={run} error={error} onLeave={onLeave} />;
 
   return (
     <div className="gr-card wide">
@@ -41,6 +61,9 @@ export default function Lobby({ state, config, isHost, send, onLeave }) {
             </li>
           ))}
         </ul>
+        {solo && state.judgeAvailable && (
+          <p className="gr-muted cw-bot-note">🤖 אם תתחילו לבד, רובי (המחשב) ישחק נגדכם.</p>
+        )}
       </div>
 
       <div className="cw-add-local">
@@ -60,7 +83,7 @@ export default function Lobby({ state, config, isHost, send, onLeave }) {
 
       {isHost && !state.judgeAvailable && (
         <p className="gr-warning">
-          ⚠️ השופט האוטומטי לא מוגדר (חסר GEMINI_API_KEY בשרת). כל מילה תאושר בהצבעה של שאר השחקנים.
+          ⚠️ השופט האוטומטי לא מוגדר (חסר GEMINI_API_KEY בשרת). כל מילה תאושר בהצבעה של שאר השחקנים, ואין משחק נגד המחשב.
         </p>
       )}
 
@@ -79,7 +102,7 @@ export default function Lobby({ state, config, isHost, send, onLeave }) {
       {error && <p className="gr-error">{error}</p>}
 
       {isHost
-        ? <button className="btn-primary" onClick={() => run('startGame')}>התחלת המשחק ▶</button>
+        ? <button className="btn-primary" onClick={() => run('startGame')}>{solo && state.judgeAvailable ? 'משחק נגד רובי ▶' : 'התחלת המשחק ▶'}</button>
         : <p className="gr-waiting">ממתינים שמנהל החדר יתחיל את המשחק...</p>}
 
       <button className="gr-link-btn subtle" onClick={onLeave}>יציאה מהחדר</button>

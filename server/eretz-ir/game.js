@@ -247,7 +247,7 @@ function createGame(io) {
         });
       } catch (err) {
         console.error('[eretz-ir] answer check failed:', err.message);
-        manualReason = 'error';
+        manualReason = err.code === 'quota' ? 'quota' : 'error';
       }
     }
     if (manualReason) items.forEach(({ ref }) => { ref.valid = true; });

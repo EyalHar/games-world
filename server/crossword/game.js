@@ -1,7 +1,8 @@
 const crypto = require('crypto');
-const { OPTIONS, DEFAULT_SETTINGS, START_WORDS, SCORING, MAX_EXPLANATION_LENGTH } = require('./constants');
+const { OPTIONS, DEFAULT_SETTINGS, START_WORDS, SCORING, MAX_EXPLANATION_LENGTH, BOT } = require('./constants');
 const { checkPlacement, placeWord, placeFirstWord, createBoard } = require('./rules');
 const { judgeWord, isJudgeAvailable } = require('./judge');
+const { findMove } = require('./bot');
 const { createCode, passesThreshold, cleanName } = require('../shared/rooms');
 
 const EMPTY_ROOM_TTL_MS = 30 * 60 * 1000;
@@ -10,9 +11,11 @@ const rooms = new Map();
 
 // ─── room helpers ──────────────────────────────────────────────────────────
 
-function createRoom() {
+function createRoom(practice) {
   const room = {
     code: createCode(rooms),
+    practice,
+    hintsUsed: 0,
     hostId: null,
     players: [],
     devices: new Map(),
@@ -25,6 +28,7 @@ function createRoom() {
     endReason: null,
     lastEvent: null,
     timer: null,
+    botTimer: null,
     cleanupTimer: null,
   };
   rooms.set(room.code, room);
@@ -33,19 +37,21 @@ function createRoom() {
 
 function deleteRoom(room) {
   clearTimeout(room.timer);
+  clearTimeout(room.botTimer);
   clearTimeout(room.cleanupTimer);
   rooms.delete(room.code);
 }
 
-const isConnected = (room, player) => Boolean(room.devices.get(player.deviceId));
+const isConnected = (room, player) => player.isBot || Boolean(room.devices.get(player.deviceId));
 const connectedPlayers = room => room.players.filter(p => isConnected(room, p));
+const connectedHumans = room => connectedPlayers(room).filter(p => !p.isBot);
 const findPlayer = (room, id) => room.players.find(p => p.id === id);
 const scoreOf = (room, pid) => room.words.reduce((sum, w) => sum + (w.playerId === pid ? w.points : 0), 0);
 
 function ensureHost(room) {
   const host = findPlayer(room, room.hostId);
   if (host && isConnected(room, host)) return;
-  const next = connectedPlayers(room)[0] || (host ? null : room.players[0]);
+  const next = connectedHumans(room)[0] || (host ? null : room.players.find(p => !p.isBot));
   if (next) room.hostId = next.id;
 }
 
@@ -66,13 +72,15 @@ function publicState(room, deviceId) {
   const { turn } = room;
   return {
     code: room.code,
+    practice: room.practice,
+    hintsUsed: room.hintsUsed,
     hostId: room.hostId,
     phase: room.phase,
     settings: room.settings,
     judgeAvailable: isJudgeAvailable(),
-    myPlayerIds: room.players.filter(p => p.deviceId === deviceId).map(p => p.id),
+    myPlayerIds: room.players.filter(p => !p.isBot && p.deviceId === deviceId).map(p => p.id),
     players: room.players.map(p => ({
-      id: p.id, name: p.name, connected: isConnected(room, p), score: scoreOf(room, p.id),
+      id: p.id, name: p.name, isBot: Boolean(p.isBot), connected: isConnected(room, p), score: scoreOf(room, p.id),
     })),
     words: room.words.map(({ id, text, row, col, dir, playerId, points, breakdown, reason, relatedTo, explanation }) => ({
       id, text, row, col, dir, playerId, points, breakdown, reason, relatedTo, explanation,
@@ -103,26 +111,33 @@ function createGame(nsp) {
   }
 
   function startGame(room) {
-    const text = START_WORDS[Math.floor(Math.random() * START_WORDS.length)];
+    const bank = START_WORDS[room.settings.level];
+    const text = bank[Math.floor(Math.random() * bank.length)];
     room.board = createBoard();
     const first = { id: 'first', text, ...placeFirstWord(room.board, text), playerId: null, points: 0, reason: 'המילה הראשונה' };
     placeWord(room.board, first);
     room.words = [first];
     room.failStreak = 0;
+    room.hintsUsed = 0;
     room.endReason = null;
     room.lastEvent = null;
+    // A lone player outside practice gets the computer as an opponent (it needs the LLM to play).
+    if (!room.practice && room.players.length === 1 && isJudgeAvailable()) {
+      room.players.push({ id: `bot-${crypto.randomUUID()}`, name: BOT.name, isBot: true, deviceId: null });
+    }
     room.phase = 'playing';
-    const starter = connectedPlayers(room)[0] || room.players[0];
+    const starter = connectedHumans(room)[0] || room.players[0];
     startTurn(room, starter.id);
   }
 
   function startTurn(room, playerId) {
     clearTimeout(room.timer);
+    clearTimeout(room.botTimer);
     room.turn = {
       id: crypto.randomUUID(),
       playerId,
       status: 'thinking',
-      remainingMs: room.settings.turnSeconds * 1000,
+      remainingMs: room.practice ? null : room.settings.turnSeconds * 1000,
       startedAt: null,
       attempt: null,
       lastRejection: null,
@@ -130,17 +145,50 @@ function createGame(nsp) {
       vote: null,
     };
     resumeTimer(room);
+    // The bot plays against the same clock; a separate timer keeps its think delay from replacing the turn timer.
+    if (findPlayer(room, playerId)?.isBot) {
+      const turnId = room.turn.id;
+      room.botTimer = setTimeout(() => runBotTurn(room, turnId), BOT.thinkMs);
+    }
+  }
+
+  async function runBotTurn(room, turnId) {
+    let move = null;
+    let failure = null;
+    try {
+      move = await findMove({ board: room.board, words: room.words, level: room.settings.level, leniency: room.settings.leniency });
+    } catch (err) {
+      console.error('[crossword] bot failed:', err.message);
+      failure = err.code === 'quota' ? 'quota' : 'error';
+    }
+    if (rooms.get(room.code) !== room || room.turn?.id !== turnId) return;
+
+    if (move) {
+      const { check } = move;
+      room.turn.attempt = {
+        text: check.text, row: move.row, col: move.col, dir: move.dir,
+        cells: check.cells, crossedWordIds: check.crossedWordIds, explanation: '',
+      };
+      acceptAttempt(room, move);
+    } else {
+      // Tell the players why the computer skipped, so an AI outage doesn't look like the bot giving up.
+      room.lastEvent = { type: failure ? 'botError' : 'botStuck', reason: failure, playerId: room.turn.playerId, at: Date.now() };
+      endTurn(room, false, !failure);
+    }
+    broadcast(room);
   }
 
   function pauseTimer(room) {
     const { turn } = room;
     clearTimeout(room.timer);
+    if (room.practice) return;
     turn.remainingMs = remainingMs(turn);
     turn.startedAt = null;
   }
 
   function resumeTimer(room) {
     const { turn } = room;
+    if (room.practice) return;
     turn.startedAt = Date.now();
     const turnId = turn.id;
     room.timer = setTimeout(() => {
@@ -161,15 +209,18 @@ function createGame(nsp) {
     return order[0]?.id ?? null;
   }
 
-  function endTurn(room, placed) {
+  // countsAsFail=false skips the turn without moving toward "everyone is stuck" (used for AI outages).
+  function endTurn(room, placed, countsAsFail = true) {
     clearTimeout(room.timer);
-    room.failStreak = placed ? 0 : room.failStreak + 1;
+    if (placed) room.failStreak = 0;
+    else if (countsAsFail) room.failStreak++;
     if (room.failStreak >= Math.max(1, connectedPlayers(room).length)) return endGame(room, 'stuck');
     startTurn(room, nextPlayerId(room, room.turn.playerId));
   }
 
   function endGame(room, reason) {
     clearTimeout(room.timer);
+    clearTimeout(room.botTimer);
     room.phase = 'gameOver';
     room.endReason = reason;
     room.turn = null;
@@ -214,7 +265,7 @@ function createGame(nsp) {
   // kind 'appeal': the player asks to overturn the judge; 'manual': no judge available, players decide.
   function startVote(room, kind) {
     const { turn } = room;
-    const voters = connectedPlayers(room).map(p => p.id).filter(id => id !== turn.playerId);
+    const voters = connectedHumans(room).map(p => p.id).filter(id => id !== turn.playerId);
     if (!voters.length) {
       if (kind === 'manual') acceptAttempt(room, { reason: '', relatedTo: '', linkedToFirst: false });
       return;
@@ -297,7 +348,7 @@ function createGame(nsp) {
 
   // goneIds: players whose device left or disconnected; removed: true when they left the room for good.
   function afterPlayersGone(room, goneIds, removed) {
-    if (!room.players.length) return deleteRoom(room);
+    if (!room.players.some(p => !p.isBot)) return deleteRoom(room);
     ensureHost(room);
     const { turn } = room;
     if (room.phase === 'playing' && turn) {
@@ -309,7 +360,7 @@ function createGame(nsp) {
         resolveVote(room);
       }
     }
-    if (!connectedPlayers(room).length) {
+    if (!connectedHumans(room).length) {
       room.cleanupTimer = setTimeout(() => deleteRoom(room), EMPTY_ROOM_TTL_MS);
     }
     broadcast(room);
@@ -338,10 +389,10 @@ function createGame(nsp) {
     const isHost = c => c.mine.some(p => p.id === c.room.hostId);
     const ownsCurrentTurn = c => c.room.turn && c.mine.some(p => p.id === c.room.turn.playerId);
 
-    socket.on('create', ({ name } = {}, ack = () => {}) => {
+    socket.on('create', ({ name, practice } = {}, ack = () => {}) => {
       const n = cleanName(name);
       if (!n) return ack({ ok: false, error: 'צריך להקליד שם' });
-      const room = createRoom();
+      const room = createRoom(Boolean(practice));
       const deviceId = crypto.randomUUID();
       addPlayer(room, deviceId, n);
       attach(socket, room, deviceId);
@@ -352,6 +403,7 @@ function createGame(nsp) {
     socket.on('join', ({ code, name } = {}, ack = () => {}) => {
       const room = rooms.get(String(code || '').trim());
       if (!room) return ack({ ok: false, error: 'לא מצאנו חדר עם הקוד הזה' });
+      if (room.practice) return ack({ ok: false, error: 'זה חדר אימון לשחקן יחיד' });
       const n = cleanName(name);
       if (!n) return ack({ ok: false, error: 'צריך להקליד שם' });
 
@@ -393,6 +445,7 @@ function createGame(nsp) {
     });
 
     on('addLocalPlayer', (c, { name }) => {
+      if (c.room.practice) return 'באימון משחק שחקן אחד';
       if (c.room.phase !== 'lobby') return 'אפשר להוסיף שחקנים רק לפני שהמשחק מתחיל';
       const n = cleanName(name);
       if (!n) return 'צריך להקליד שם';
@@ -450,7 +503,7 @@ function createGame(nsp) {
       const { turn } = c.room;
       if (!ownsCurrentTurn(c) || turn.status !== 'thinking' || !turn.lastRejection) return 'אין מה לערער';
       if (turn.appealed) return 'כבר ערערת על המילה הזו';
-      if (!connectedPlayers(c.room).some(p => p.id !== turn.playerId)) return 'אין מי שיצביע';
+      if (!connectedHumans(c.room).some(p => p.id !== turn.playerId)) return 'אין מי שיצביע';
       pauseTimer(c.room);
       turn.appealed = true;
       startVote(c.room, 'appeal');
@@ -484,6 +537,30 @@ function createGame(nsp) {
       if (!isHost(c)) return 'רק מנהל החדר יכול להתחיל משחק חדש';
       if (c.room.phase !== 'gameOver') return 'המשחק עדיין פעיל';
       Object.assign(c.room, { phase: 'lobby', board: null, words: [], turn: null, failStreak: 0, endReason: null, lastEvent: null });
+      c.room.players = c.room.players.filter(p => !p.isBot);
+    });
+
+    // Practice only: the computer suggests a word that fits, using the same engine as the bot player.
+    socket.on('hint', async (_, ack = () => {}) => {
+      const c = ctx();
+      if (!c) return ack({ ok: false, error: 'לא נמצאת בחדר' });
+      const { room } = c;
+      if (!room.practice || room.phase !== 'playing' || room.turn?.status !== 'thinking') return ack({ ok: false, error: 'אין רמזים עכשיו' });
+      if (!isJudgeAvailable()) return ack({ ok: false, error: 'רמזים דורשים את השופט האוטומטי' });
+
+      try {
+        const move = await findMove({ board: room.board, words: room.words, level: room.settings.level, leniency: room.settings.leniency });
+        if (!move) return ack({ ok: false, error: 'לא מצאתי מילה שנכנסת ללוח... אפשר לסיים את האימון' });
+        room.hintsUsed++;
+        broadcast(room);
+        ack({ ok: true, hint: { word: move.check.text, row: move.row, col: move.col, dir: move.dir, relatedTo: move.relatedTo, reason: move.reason } });
+      } catch (err) {
+        console.error('[crossword] hint failed:', err.message);
+        ack({
+          ok: false,
+          error: err.code === 'quota' ? 'מכסת הבקשות החינמית של Gemini נגמרה להיום, ולכן אין רמזים כרגע' : 'הרמז לא הצליח הפעם, נסו שוב',
+        });
+      }
     });
   });
 }

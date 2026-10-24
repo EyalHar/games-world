@@ -9,6 +9,7 @@ const SCORING = {
 };
 
 const OPTIONS = {
+  level: ['easy', 'medium', 'hard'],
   turnSeconds: [30, 60, 90, 120],
   retry: [true, false],
   leniency: ['strict', 'medium', 'lenient'],
@@ -16,22 +17,34 @@ const OPTIONS = {
 };
 
 const DEFAULT_SETTINGS = {
+  level: 'easy',
   turnSeconds: 60,
   retry: true,
   leniency: 'medium',
   voteThreshold: 'majority',
 };
 
-const START_WORDS = [
-  'שמש', 'ירח', 'כוכב', 'חתול', 'כלב', 'פרפר', 'גינה', 'פרח', 'ספר', 'מורה',
-  'כיתה', 'חורף', 'קיץ', 'גשם', 'שלג', 'ים', 'חוף', 'דג', 'סירה', 'אוטובוס',
-  'רכבת', 'מטוס', 'מטבח', 'עוגה', 'שוקולד', 'גלידה', 'תפוח', 'בננה', 'יער', 'אריה',
-  'פיל', 'קוף', 'ציפור', 'קן', 'בית', 'משפחה', 'סבתא', 'חבר', 'כדור', 'משחק',
-  'מוזיקה', 'גיטרה', 'שיר', 'צבע', 'ציור', 'מחשב', 'טלפון', 'רופא', 'שוטר', 'כבאי',
-  'אש', 'מים', 'נהר', 'הר', 'מדבר', 'גמל', 'חלל', 'רקטה', 'חג', 'מתנה',
-  'בלון', 'ליצן', 'קרקס', 'דינוזאור', 'מלך', 'ארמון', 'פיה', 'קסם',
-];
+// The level sets the topic of the first word (and how the computer player chooses its words).
+const START_WORDS = {
+  easy: [ // animals, home, food
+    'כלב', 'חתול', 'פיל', 'אריה', 'קוף', 'ציפור', 'דג', 'פרפר', 'סוס', 'פרה', 'ארנב', 'צב',
+    'בית', 'מטבח', 'מיטה', 'שולחן', 'כיסא', 'חלון', 'דלת', 'אמבטיה',
+    'עוגה', 'שוקולד', 'גלידה', 'תפוח', 'בננה', 'פיצה', 'לחם', 'חלב', 'ביצה', 'מרק',
+  ],
+  medium: [ // nature, school, professions, transport
+    'שמש', 'ירח', 'ים', 'יער', 'הר', 'נהר', 'גשם', 'שלג', 'פרח', 'מדבר', 'כוכב', 'חוף',
+    'כיתה', 'מורה', 'ספר', 'מחברת', 'עיפרון', 'הפסקה', 'תיק',
+    'רופא', 'שוטר', 'כבאי', 'טבח', 'נגר', 'טייס',
+    'אוטובוס', 'רכבת', 'מטוס', 'סירה', 'אופניים', 'רקטה',
+  ],
+  hard: [ // abstract ideas
+    'חופש', 'זמן', 'חלום', 'אומץ', 'שמחה', 'פחד', 'חברות', 'סוד', 'הצלחה', 'סקרנות',
+    'זיכרון', 'דמיון', 'תקווה', 'שקט', 'אהבה', 'צדק', 'סבלנות', 'הפתעה', 'געגוע', 'כבוד',
+  ],
+};
+
+const BOT = { name: '🤖 רובי', thinkMs: 1200 };
 
 module.exports = {
-  BOARD_SIZE, MIN_WORD_LENGTH, MAX_EXPLANATION_LENGTH, SCORING, OPTIONS, DEFAULT_SETTINGS, START_WORDS,
+  BOARD_SIZE, MIN_WORD_LENGTH, MAX_EXPLANATION_LENGTH, SCORING, OPTIONS, DEFAULT_SETTINGS, START_WORDS, BOT,
 };

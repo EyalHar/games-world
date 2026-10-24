@@ -13,10 +13,16 @@ const EMPTY_DRAFT = { selected: null, dir: 'h', word: '', explanation: '' };
 
 function WatchPanel({ state }) {
   const { turn, players } = state;
-  const name = players.find(p => p.id === turn.playerId)?.name;
+  const player = players.find(p => p.id === turn.playerId);
+  if (player?.isBot) return (
+    <div className="cw-panel bot">
+      <div className="cw-bot-thinking">🤖</div>
+      <p className="cw-panel-title">{player.name} חושב על מילה...</p>
+    </div>
+  );
   return (
     <div className="cw-panel">
-      <p className="cw-panel-title">⏳ התור של {name}</p>
+      <p className="cw-panel-title">⏳ התור של {player?.name}</p>
       {turn.status === 'checking' && <p className="gr-muted">🔍 בודקים את "{turn.attempt?.text}"...</p>}
       {turn.status === 'voting' && <p className="gr-muted">🗳️ מצביעים על "{turn.attempt?.text}"...</p>}
       {turn.status === 'thinking' && turn.lastRejection && (
@@ -73,12 +79,16 @@ export default function PlayingView({ state, config, isHost, send }) {
 
       <div className="cw-top">
         <ScoreList state={state} colorOf={colorOf} />
-        <Countdown
-          key={turnKey}
-          remainingMs={turn.remainingMs}
-          totalSeconds={state.settings.turnSeconds}
-          running={turn.running}
-        />
+        {state.practice ? (
+          <span className="cw-practice-badge">🎯 אימון{state.hintsUsed > 0 && ` · 💡 ${state.hintsUsed} רמזים`}</span>
+        ) : (
+          <Countdown
+            key={turnKey}
+            remainingMs={turn.remainingMs}
+            totalSeconds={state.settings.turnSeconds}
+            running={turn.running}
+          />
+        )}
       </div>
 
       <div className="cw-layout">
@@ -103,11 +113,11 @@ export default function PlayingView({ state, config, isHost, send }) {
 
         <div className="cw-side">
           {myTurn
-            ? <TurnPanel state={state} config={config} player={player} draft={draft} setDraft={setDraft} check={check} send={send} />
+            ? <TurnPanel key={turnKey} state={state} config={config} player={player} draft={draft} setDraft={setDraft} check={check} send={send} />
             : <WatchPanel state={state} />}
           {amVoter && <VotePanel state={state} send={send} />}
           <WordLog state={state} colorOf={colorOf} />
-          {isHost && (
+          {isHost && !state.practice && (
             <button className="gr-link-btn subtle" onClick={() => send('endGame')}>🏁 סיום המשחק</button>
           )}
         </div>

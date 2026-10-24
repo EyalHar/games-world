@@ -47,6 +47,7 @@ export default function Crossword() {
         initialCode={params.get('room')}
         onCreate={createRoom}
         onJoin={joinRoom}
+        practice={{ desc: 'בלי שעון ועם רמזים, כדי ללמוד את המשחק' }}
       />
     );
   } else if (state.phase === 'lobby') {

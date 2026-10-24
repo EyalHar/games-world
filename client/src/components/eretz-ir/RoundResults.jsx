@@ -6,6 +6,7 @@ import { startsWithLetter } from '../../utils/hebrew';
 const MANUAL_REASONS = {
   'no-key': 'הבדיקה האוטומטית לא מוגדרת',
   error: 'הבדיקה האוטומטית לא הצליחה הפעם',
+  quota: 'מכסת הבקשות החינמית של Gemini נגמרה להיום',
 };
 
 function AnswerItem({ answer, ownerId, catId, idx, ctx }) {
