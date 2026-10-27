@@ -104,10 +104,13 @@
     border-top: 2px solid rgba(180, 100, 255, 0.3);
     position: static;
   }
-  .sidebar-logo { padding: 0 16px 0 0; border-bottom: none; margin-bottom: 0; flex-direction: row; }
+  .sidebar-logo { padding: 0 0 0 12px; border-bottom: none; margin-bottom: 0; flex-direction: row; flex-shrink: 0; }
   .sidebar-logo-emoji { font-size: 1.5rem; }
   .sidebar-logo-text { font-size: 0.85rem; }
-  .sidebar-menu { flex-direction: row; flex: 1; padding: 0; }
+  /* The links scroll sideways inside the bar, so adding games never widens the page on a phone. */
+  .sidebar-menu { flex-direction: row; flex: 1; min-width: 0; padding: 0; overflow-x: auto; scrollbar-width: none; }
+  .sidebar-menu::-webkit-scrollbar { display: none; }
+  .sidebar-link { white-space: nowrap; }
   .sidebar-section-title { display: none; }
   .sidebar-footer { display: none; }
 }

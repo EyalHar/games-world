@@ -90,6 +90,9 @@
 .card-pink { border-color: rgba(253,121,168,0.4); }
 .card-pink:hover { border-color: rgba(253,121,168,0.8); box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 30px rgba(253,121,168,0.3); }
 
+.card-sea { border-color: rgba(126,214,223,0.4); }
+.card-sea:hover { border-color: rgba(126,214,223,0.8); box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 30px rgba(126,214,223,0.3); }
+
 .home-game-emoji {
   font-size: 4rem;
   animation: float 3s ease-in-out infinite;

@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import AssociationGame from './pages/AssociationGame';
 import EretzIr from './pages/EretzIr';
 import Crossword from './pages/Crossword';
+import FishHunt from './pages/FishHunt';
 import './App.css';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/associations" element={<AssociationGame />} />
             <Route path="/eretz-ir" element={<EretzIr />} />
             <Route path="/crossword" element={<Crossword />} />
+            <Route path="/fish" element={<FishHunt />} />
           </Routes>
         </main>
       </div>
